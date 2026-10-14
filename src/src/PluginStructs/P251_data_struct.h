@@ -31,6 +31,12 @@
 # define P251_ERR_FINGER_TIMEOUT 0xFE           // No finger placed (or not lifted) within P251_FINGER_TIMEOUT_MS
 # define P251_ERR_CANCELLED    0xFD             // fingerprint,cancel
 
+// LED color selector of the settings page (here, not in the .ino: PlatformIO adds prototypes of .ino
+// functions outside the #ifdef USES_P251, which breaks builds without P251)
+void P251_colorSelector(const __FlashStringHelper *label,
+                        const __FlashStringHelper *id,
+                        int                        selected);
+
 enum class P251_Job : uint8_t {
   None,
   Init,   // Verify password, read the library size and the template count

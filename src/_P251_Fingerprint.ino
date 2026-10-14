@@ -35,19 +35,6 @@
 
 # include "src/PluginStructs/P251_data_struct.h"
 
-static void P251_colorSelector(const __FlashStringHelper *label, const __FlashStringHelper *id, int selected) {
-  const __FlashStringHelper *options[] = {
-    F("Red"), F("Blue"), F("Purple"), F("Green"), F("Yellow"), F("Cyan"), F("White"),
-  };
-  const int optionValues[] = {
-    P251_proto::COLOR_RED,   P251_proto::COLOR_BLUE,   P251_proto::COLOR_PURPLE, P251_proto::COLOR_GREEN,
-    P251_proto::COLOR_YELLOW, P251_proto::COLOR_CYAN,  P251_proto::COLOR_WHITE,
-  };
-  const FormSelectorOptions selector(NR_ELEMENTS(optionValues), options, optionValues);
-
-  selector.addFormSelector(label, id, selected);
-}
-
 boolean Plugin_251(uint8_t function, struct EventStruct *event, String& string)
 {
   boolean success = false;

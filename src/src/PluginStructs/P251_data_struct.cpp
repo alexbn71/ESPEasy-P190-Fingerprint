@@ -10,6 +10,20 @@
 
 using namespace P251_proto;
 
+void P251_colorSelector(const __FlashStringHelper *label, const __FlashStringHelper *id, int selected) {
+  const __FlashStringHelper *options[] = {
+    F("Red"), F("Blue"), F("Purple"), F("Green"), F("Yellow"), F("Cyan"), F("White"),
+  };
+  const int optionValues[] = {
+    COLOR_RED,   COLOR_BLUE,   COLOR_PURPLE, COLOR_GREEN,
+    COLOR_YELLOW, COLOR_CYAN,  COLOR_WHITE,
+  };
+  const FormSelectorOptions selector(NR_ELEMENTS(optionValues), options, optionValues);
+
+  selector.addFormSelector(label, id, selected);
+}
+
+
 P251_data_struct::P251_data_struct(struct EventStruct *event) {
   const int mult = P251_BAUD_MULT;
 
