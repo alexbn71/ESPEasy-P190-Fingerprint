@@ -132,7 +132,7 @@ public:
         _length |= c;
         _sum    += c;
 
-        if ((_length < 2) || (_length - 2 > MAX_PAYLOAD)) {
+        if ((_length < 2) || (_length > MAX_PAYLOAD + 2)) {
           ++_errors;
           _pos = 0;
           return false;
