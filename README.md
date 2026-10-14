@@ -54,7 +54,7 @@ module is queried every *Scan interval* (default 250 ms).
 
 | Setting | Default | |
 |---|---|---|
-| Serial port, GPIO RX / TX | – | hardware serial recommended (ESP32: Serial1/Serial2) |
+| Serial port, GPIO RX / TX | – | hardware serial recommended. ESP32: RX/TX are filled in automatically when a HW port is selected (Serial0 3/1, Serial1 26/27, Serial2 16/17), and can be changed |
 | Touch (WAKEUP) | – | optional input GPIO |
 | Baud rate | 57600 | factory setting of the module |
 | Password / Address | 0x00000000 / 0xFFFFFFFF | factory settings |

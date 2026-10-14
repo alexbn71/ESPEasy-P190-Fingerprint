@@ -37,6 +37,15 @@ void P251_colorSelector(const __FlashStringHelper *label,
                         const __FlashStringHelper *id,
                         int                        selected);
 
+// Default GPIOs of the ESP32 hardware serial ports, used when RX and TX are left empty:
+// Serial0 3/1, Serial1 26/27, Serial2 16/17. Returns false for other ports and chips.
+bool P251_defaultSerialPins(uint8_t port,
+                            int8_t& rx,
+                            int8_t& tx);
+
+// Settings page script: fills RX/TX with the defaults above when a hardware serial port is selected
+void P251_addSerialPinsScript();
+
 enum class P251_Job : uint8_t {
   None,
   Init,   // Verify password, read the library size and the template count
