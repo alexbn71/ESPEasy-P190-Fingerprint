@@ -1,0 +1,218 @@
+#include "_Plugin_Helper.h"
+#ifdef USES_P251
+
+// #######################################################################################################
+// ############################ Plugin 251: Fingerprint reader (Grow R503 / R307) ########################
+// #######################################################################################################
+
+/*
+   Grow fingerprint modules on a serial port: R503 (with RGB LED ring), R307, R502, ZFM-20, AS608, ...
+   A finger on the sensor is searched in the module library: the values ID (-1 = not recognised), Score
+   and Count (templates stored) are sent to the controllers and the rules (event <taskname>#ID).
+
+   Commands:
+     fingerprint,enroll,<id>                            store a new finger at <id> (2 captures)
+     fingerprint,delete,<id>                            delete the finger stored at <id>
+     fingerprint,deleteall                              delete all fingers
+     fingerprint,count                                  read the number of stored fingers (event #Count)
+     fingerprint,led,<mode>,<color>[,<speed>[,<times>]] LED ring: breathing|flash|on|off|fadein|fadeout,
+                                                        red|blue|purple|green|yellow|cyan|white
+     fingerprint,cancel                                 stop an enrolment
+
+   Events: <taskname>#EnrollScan=<n>, #EnrollRemove=<n>, #Enrolled=<id>, #EnrollFailed=<code>,
+           #Deleted=<id> (-1 = all), #Count=<n>, #Error=<code>
+
+   History:
+   2026-10-14 First version
+ */
+
+# define PLUGIN_251
+# define PLUGIN_ID_251         251
+# define PLUGIN_NAME_251       "Security - Fingerprint (Grow R503/R307)"
+# define PLUGIN_VALUENAME1_251 "ID"
+# define PLUGIN_VALUENAME2_251 "Score"
+# define PLUGIN_VALUENAME3_251 "Count"
+
+# include "src/PluginStructs/P251_data_struct.h"
+
+static void P251_colorSelector(const __FlashStringHelper *label, const __FlashStringHelper *id, int selected) {
+  const __FlashStringHelper *options[] = {
+    F("Red"), F("Blue"), F("Purple"), F("Green"), F("Yellow"), F("Cyan"), F("White"),
+  };
+  const int optionValues[] = {
+    P251_proto::COLOR_RED,   P251_proto::COLOR_BLUE,   P251_proto::COLOR_PURPLE, P251_proto::COLOR_GREEN,
+    P251_proto::COLOR_YELLOW, P251_proto::COLOR_CYAN,  P251_proto::COLOR_WHITE,
+  };
+  const FormSelectorOptions selector(NR_ELEMENTS(optionValues), options, optionValues);
+
+  selector.addFormSelector(label, id, selected);
+}
+
+boolean Plugin_251(uint8_t function, struct EventStruct *event, String& string)
+{
+  boolean success = false;
+
+  switch (function)
+  {
+    case PLUGIN_DEVICE_ADD:
+    {
+      auto& dev = Device[++deviceCount];
+      dev.Number         = PLUGIN_ID_251;
+      dev.Type           = DEVICE_TYPE_SERIAL_PLUS1;
+      dev.VType          = Sensor_VType::SENSOR_TYPE_TRIPLE;
+      dev.ValueCount     = 3;
+      dev.SendDataOption = true;
+      break;
+    }
+
+    case PLUGIN_GET_DEVICENAME:
+    {
+      string = F(PLUGIN_NAME_251);
+      break;
+    }
+
+    case PLUGIN_GET_DEVICEVALUENAMES:
+    {
+      strcpy_P(ExtraTaskSettings.TaskDeviceValueNames[P251_VALUE_ID],    PSTR(PLUGIN_VALUENAME1_251));
+      strcpy_P(ExtraTaskSettings.TaskDeviceValueNames[P251_VALUE_SCORE], PSTR(PLUGIN_VALUENAME2_251));
+      strcpy_P(ExtraTaskSettings.TaskDeviceValueNames[P251_VALUE_COUNT], PSTR(PLUGIN_VALUENAME3_251));
+
+      for (uint8_t i = 0; i < 3; ++i) {
+        ExtraTaskSettings.TaskDeviceValueDecimals[i] = 0;
+      }
+      break;
+    }
+
+    case PLUGIN_GET_DEVICEGPIONAMES:
+    {
+      serialHelper_getGpioNames(event);
+      event->String3 = formatGpioName_input_optional(F("Touch (WAKEUP, blue)"));
+      break;
+    }
+
+    case PLUGIN_WEBFORM_SHOW_CONFIG:
+    {
+      string += serialHelper_getSerialTypeLabel(event);
+      success = true;
+      break;
+    }
+
+    case PLUGIN_SET_DEFAULTS:
+    {
+      P251_BAUD_MULT     = P251_DEF_BAUD_MULT;
+      P251_LED_FEEDBACK  = 1;
+      P251_MATCH_COLOR   = P251_proto::COLOR_BLUE;
+      P251_NOMATCH_COLOR = P251_proto::COLOR_RED;
+      P251_POLL_MS       = P251_DEF_POLL_MS;
+      P251_MIN_SCORE     = 0;
+      P251_PASSWORD      = 0;
+      P251_ADDRESS       = P251_proto::DEFAULT_ADDRESS;
+      success            = true;
+      break;
+    }
+
+    case PLUGIN_WEBFORM_SHOW_SERIAL_PARAMS:
+    {
+      const __FlashStringHelper *options[] = { F("9600"), F("19200"), F("38400"), F("57600"), F("115200") };
+      const int optionValues[]             = { 1, 2, 4, 6, 12 };
+      const FormSelectorOptions selector(NR_ELEMENTS(optionValues), options, optionValues);
+      selector.addFormSelector(F("Baud rate"), F("baud"), P251_BAUD_MULT);
+      addFormNote(F("Factory setting: 57600"));
+      break;
+    }
+
+    case PLUGIN_WEBFORM_LOAD:
+    {
+      addFormNote(F("Wiring R503: red 3.3V, black GND, yellow TX, green RX, blue WAKEUP (touch), white 3.3VT. "
+                    "Power with 3.3V only. Without the touch GPIO the module is polled at the scan interval."));
+
+      addFormSubHeader(F("Module"));
+      addFormTextBox(F("Password"), F("pwd"), formatToHex(P251_PASSWORD, 8), 10);
+      addFormTextBox(F("Address"),  F("addr"), formatToHex(P251_ADDRESS, 8), 10);
+      addFormNote(F("Factory setting: password 0x00000000, address 0xFFFFFFFF"));
+
+      addFormSubHeader(F("Scan"));
+      addFormNumericBox(F("Scan interval (no touch GPIO)"), F("poll"), P251_POLL_MS, 50, 5000);
+      addUnit(F("ms"));
+      addFormNumericBox(F("Minimum score"), F("minscore"), P251_MIN_SCORE, 0, 1000);
+      addFormNote(F("Matches with a lower score are reported as not recognised (ID -1). 0 = accept every match of the module."));
+
+      addFormSubHeader(F("LED ring (R503)"));
+      addFormCheckBox(F("Show result on the LED ring"), F("ledfb"), P251_LED_FEEDBACK != 0);
+      P251_colorSelector(F("Recognised"),     F("okcolor"), P251_MATCH_COLOR);
+      P251_colorSelector(F("Not recognised"), F("kocolor"), P251_NOMATCH_COLOR);
+      addFormNote(F("Green, yellow, cyan and white need the full RGB version of the R503. Enrolment: purple."));
+
+      success = true;
+      break;
+    }
+
+    case PLUGIN_WEBFORM_SAVE:
+    {
+      uint32_t value = 0;
+
+      P251_BAUD_MULT     = getFormItemInt(F("baud"));
+      P251_POLL_MS       = getFormItemInt(F("poll"));
+      P251_MIN_SCORE     = getFormItemInt(F("minscore"));
+      P251_LED_FEEDBACK  = isFormItemChecked(F("ledfb")) ? 1 : 0;
+      P251_MATCH_COLOR   = getFormItemInt(F("okcolor"));
+      P251_NOMATCH_COLOR = getFormItemInt(F("kocolor"));
+
+      if (validUIntFromString(webArg(F("pwd")), value)) { P251_PASSWORD = value; }
+
+      if (validUIntFromString(webArg(F("addr")), value)) { P251_ADDRESS = value; }
+      success = true;
+      break;
+    }
+
+    case PLUGIN_WEBFORM_SHOW_VALUES:
+    {
+      P251_data_struct *P251_data = static_cast<P251_data_struct *>(getPluginTaskData(event->TaskIndex));
+
+      if (nullptr != P251_data) {
+        P251_data->showValues(event);
+      }
+      break;
+    }
+
+    case PLUGIN_INIT:
+    {
+      initPluginTaskData(event->TaskIndex, new (std::nothrow) P251_data_struct(event));
+      P251_data_struct *P251_data = static_cast<P251_data_struct *>(getPluginTaskData(event->TaskIndex));
+
+      success = nullptr != P251_data && P251_data->init(event);
+      break;
+    }
+
+    case PLUGIN_FIFTY_PER_SECOND:
+    {
+      P251_data_struct *P251_data = static_cast<P251_data_struct *>(getPluginTaskData(event->TaskIndex));
+
+      if (nullptr != P251_data) {
+        P251_data->loop(event);
+        success = true;
+      }
+      break;
+    }
+
+    case PLUGIN_READ:
+    {
+      // Values are sent when a finger is scanned. Returning true here would resend the last ID to
+      // controllers and rules (e.g. open the door again) at every task interval.
+      success = false;
+      break;
+    }
+
+    case PLUGIN_WRITE:
+    {
+      P251_data_struct *P251_data = static_cast<P251_data_struct *>(getPluginTaskData(event->TaskIndex));
+
+      success = nullptr != P251_data && P251_data->plugin_write(event, string);
+      break;
+    }
+  }
+
+  return success;
+}
+
+#endif // USES_P251

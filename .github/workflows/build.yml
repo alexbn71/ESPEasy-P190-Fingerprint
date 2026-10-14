@@ -1,0 +1,73 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+env:
+  ESPEASY_REF: mega-20260720        # ESPEasy release the plugin is built against
+  PIO_ENV: custom_ESP32_4M316k      # ESP32, 4 MB flash
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Protocol tests
+        run: |
+          g++ -std=c++17 -Wall -Wextra -Werror -Isrc/src/PluginStructs -o test_protocol test/test_protocol.cpp
+          ./test_protocol
+
+  firmware:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      - name: Checkout ESPEasy ${{ env.ESPEASY_REF }}
+        uses: actions/checkout@v4
+        with:
+          repository: letscontrolit/ESPEasy
+          ref: ${{ env.ESPEASY_REF }}
+          path: ESPEasy
+
+      - name: Add P251 to ESPEasy
+        run: |
+          cp -rv plugin/src/. ESPEasy/src/
+          cp -v plugin/.github/ci/Custom.h ESPEasy/src/Custom.h
+          # pioarduino 6.2 rejects 'pvs-studio' (already fixed in newer ESPEasy versions)
+          sed -i 's/^check_tool = pvs-studio/check_tool = clangtidy/' ESPEasy/platformio_special_envs.ini
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - uses: actions/cache@v4
+        with:
+          path: ESPEasy/.platformio
+          key: pio-${{ env.ESPEASY_REF }}-${{ env.PIO_ENV }}
+
+      - name: Install pioarduino
+        working-directory: ESPEasy
+        # The ESP32 platform used by ESPEasy needs PlatformIO Core >= 6.2.0
+        run: |
+          pip install -r requirements.txt
+          pip install -U 'pioarduino>=6.2.0'
+
+      - name: Build
+        working-directory: ESPEasy
+        run: pio run -e "$PIO_ENV"
+
+      - name: Collect firmware
+        run: |
+          mkdir firmware
+          cp ESPEasy/build_output/bin/*_${PIO_ENV}.factory.bin firmware/ESPEasy_P251_test_ESP32_4M.factory.bin
+          cp ESPEasy/build_output/bin/*_${PIO_ENV}.bin         firmware/ESPEasy_P251_test_ESP32_4M.ota.bin
+          ls -l firmware
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: espeasy-p251-test-firmware
+          path: firmware/*.bin
