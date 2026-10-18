@@ -118,6 +118,39 @@ static void testSysParams() {
   CHECK(parser.packet().word(15) == 6);  // baud / 9600
 }
 
+static void testIndexTable() {
+  Parser parser;
+
+  // ReadIndexTable page 0: templates 0, 1, 2 and 9 used
+  std::vector<uint8_t> pkt = { 0xEF, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0x07, 0x00, 0x23, 0x00, 0x07, 0x02 };
+
+  pkt.resize(9 + 1 + INDEX_PAGE_BYTES, 0);
+  uint16_t sum = 0;
+
+  for (size_t i = 6; i < pkt.size(); ++i) { sum += pkt[i]; }
+  pkt.push_back(sum >> 8);
+  pkt.push_back(sum & 0xFF);
+
+  CHECK(feedAll(parser, pkt) == 1);
+  CHECK(parser.packet().size == 1 + INDEX_PAGE_BYTES);
+  CHECK(parser.packet().code() == CODE_OK);
+
+  const uint8_t *table = parser.packet().payload + 1;
+  CHECK(indexUsed(table, 0));
+  CHECK(indexUsed(table, 2));
+  CHECK(!indexUsed(table, 3));
+  CHECK(indexUsed(table, 9));
+  CHECK(indexFirstFree(table, 200) == 3);
+
+  // Full below the capacity
+  uint8_t full[INDEX_PAGE_BYTES]{};
+  for (size_t i = 0; i < 25; ++i) { full[i] = 0xFF; } // 0..199
+  CHECK(indexFirstFree(full, 200) == -1);
+  CHECK(indexFirstFree(full, 201) == 200);
+  full[24] = 0x7F; // 199 free
+  CHECK(indexFirstFree(full, 200) == 199);
+}
+
 static void testLookup() {
   CHECK(ledMode("breathing") == AURA_BREATHING);
   CHECK(ledMode("Flash") == AURA_FLASHING);
@@ -147,6 +180,7 @@ int main() {
   testParseAck();
   testResync();
   testSysParams();
+  testIndexTable();
   testLookup();
 
   if (failures == 0) {

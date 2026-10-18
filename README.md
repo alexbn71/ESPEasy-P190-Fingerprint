@@ -4,7 +4,10 @@
 serial port: R503 (round, with RGB LED ring), R307, R502, ZFM-20, AS608 and compatibles.
 
 - Recognises a finger and sends its ID and score to the controllers and the rules
-- Enrol, delete and count fingers with commands (from rules, HTTP or MQTT)
+- Enrol, delete and count fingers with commands (from rules, HTTP or MQTT); enrolment can pick the first
+  free slot by itself
+- Enrolment progress as a task value, and JSON answers to HTTP commands: an enrolment page needs nothing
+  but `/json` and `/control`
 - R503 LED ring: automatic feedback (recognised / not recognised / enrolling) and a `led` command
 - Touch detection on the WAKEUP pin, or polling when it is not wired
 - Non blocking: the protocol runs as a state machine, ESPEasy keeps running while the module works
@@ -71,15 +74,30 @@ The device page shows whether the module answers and how many of its slots are u
 | `ID` | slot of the recognised finger (0..199 on the R503), **-1** = not recognised |
 | `Score` | match score from the module (higher = better) |
 | `Count` | number of fingers stored in the module |
+| `Enroll` | progress of the last enrolment, see below |
 
 They are sent once per touch, when a finger is scanned: the rules get `<taskname>#ID`,
 `<taskname>#Score` and `<taskname>#Count`. The module must see the finger lifted before it scans again.
+
+`Enroll` is only updated, never sent: it is meant to be polled (`/json?tasknr=<n>&view=sensorupdate`,
+value number 4) by pages or systems that don't get the rules events.
+
+| `Enroll` | |
+|---|---|
+| 0 | no enrolment yet, or accepted and waiting to start |
+| 1 | place the finger (capture 1) |
+| 2 | lift the finger |
+| 3 | place the finger again (capture 2) |
+| 4 | merging and storing |
+| 5 | stored |
+| < 0 | failed: minus the error code (e.g. -254 = timeout), see below |
 
 ## Commands
 
 | Command | |
 |---|---|
-| `fingerprint,enroll,<id>` | store a new finger at slot `<id>` (overwrites it): place, lift, place again |
+| `fingerprint,enroll[,<id>]` | store a new finger at slot `<id>` (overwrites it), or without `<id>` at the first free slot: place, lift, place again |
+| `fingerprint,list` | state of the module and the used slots, as JSON (see below) |
 | `fingerprint,delete,<id>` | delete slot `<id>` |
 | `fingerprint,deleteall` | delete all fingers |
 | `fingerprint,count` | read the number of stored fingers (event `#Count`) |
@@ -91,7 +109,22 @@ LED ring: `<mode>` = `breathing`, `flash`, `on`, `off`, `fadein`, `fadeout` (or 
 R503), `<speed>` 0..255 (default 100), `<times>` 0..255 (0 = forever, default).
 Example: `fingerprint,led,breathing,blue`.
 
-Commands reach every P251 task: use a single P251 task per ESP.
+Commands reach every P251 task: use a single P251 task per ESP. Only one enrolment at a time: a second
+`enroll` is refused while one is queued or running.
+
+From HTTP (`/control?cmd=...`) two commands answer with JSON:
+
+| Command | Answer |
+|---|---|
+| `fingerprint,enroll[,<id>]` | `{"enroll":3}` (slot used) or `{"error":"no free slot"}` |
+| `fingerprint,list` | `{"ready":true,"capacity":200,"count":2,"enroll":5,"slot":3,"used":[0,3]}` |
+
+`enroll` and `slot` in the list are the state and the slot of the last enrolment. `used` is `null` if the
+module can't list its slots (ReadIndexTable): then `enroll` needs an `<id>`.
+
+**`/control` and `/json` don't ask for the ESPEasy admin password.** Anyone who can reach the ESP can enrol
+a finger, also over the slot of an authorised person. Limit the clients with *Config → Client IP filtering*
+(e.g. *Allow IP range*) or keep the ESP in a network only trusted devices can reach.
 
 ## Events
 
@@ -106,7 +139,7 @@ Commands reach every P251 task: use a single P251 task per ESP.
 | `<taskname>#Error=<code>` | `delete`, `deleteall`, `count` or `led` failed |
 
 Error codes: `10` the two captures are not the same finger, `11` slot out of range, `24` flash
-error, `253` cancelled, `254` no finger placed / lifted within 20 s, `255` no answer from the module.
+error, `252` no free slot, `253` cancelled, `254` no finger placed / lifted within 20 s, `255` no answer from the module.
 Other values are confirmation codes of the module (see its datasheet).
 
 ## Rules example
@@ -129,7 +162,8 @@ on Finger#Enrolled do
 endon
 ```
 
-Enrol from the browser: `http://<esp-ip>/control?cmd=fingerprint,enroll,0`.
+Enrol from the browser: `http://<esp-ip>/control?cmd=fingerprint,enroll` (first free slot) or
+`http://<esp-ip>/control?cmd=fingerprint,enroll,0`.
 
 ## License
 

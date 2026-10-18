@@ -4,7 +4,9 @@
 #include "../../_Plugin_Helper.h"
 #ifdef USES_P251
 
+# include <algorithm>
 # include <deque>
+# include <vector>
 # include <ESPeasySerial.h>
 
 # include "P251_protocol.h"
@@ -25,11 +27,22 @@
 # define P251_VALUE_ID         0
 # define P251_VALUE_SCORE      1
 # define P251_VALUE_COUNT      2
+# define P251_VALUE_ENROLL     3
+
+// Value Enroll: progress of the last enrolment, for pages and controllers that don't get the rules events
+# define P251_ENROLL_NONE      0                // No enrolment yet, or accepted and not started
+# define P251_ENROLL_PLACE1    1                // Place the finger (capture 1)
+# define P251_ENROLL_LIFT      2                // Lift the finger
+# define P251_ENROLL_PLACE2    3                // Place the finger again (capture 2)
+# define P251_ENROLL_STORING   4                // Merging and storing
+# define P251_ENROLL_DONE      5                // Stored
+                                                // < 0: failed, -<error code>
 
 // Error codes of the <taskname>#EnrollFailed and #Error events, besides the module confirmation codes
 # define P251_ERR_NO_RESPONSE  0xFF             // The module didn't answer
 # define P251_ERR_FINGER_TIMEOUT 0xFE           // No finger placed (or not lifted) within P251_FINGER_TIMEOUT_MS
 # define P251_ERR_CANCELLED    0xFD             // fingerprint,cancel
+# define P251_ERR_LIBRARY_FULL 0xFC             // fingerprint,enroll without ID: no free slot
 
 // LED color selector of the settings page (here, not in the .ino: PlatformIO adds prototypes of .ino
 // functions outside the #ifdef USES_P251, which breaks builds without P251)
@@ -61,6 +74,7 @@ enum class P251_Step : uint8_t {
   None,
   VerifyPassword,
   ReadParams,
+  ReadIndex,      // Used slots, one page of 256 per command
   ReadCount,
   ScanImage,
   ScanFeatures,
@@ -99,6 +113,16 @@ public:
 private:
 
   bool request(const P251_request& req);
+  bool enrollPending() const;
+  void refresh();
+  void setIndex(uint16_t id,
+                bool     used);
+  void setEnrollState(struct EventStruct *event,
+                      int                 state) const;
+  void reply(struct EventStruct *event,
+             const String      & json) const;
+  void replyError(struct EventStruct *event,
+                  const String      & message) const;
   void idle(struct EventStruct *event);
   void startJob(struct EventStruct *event,
                 const P251_request& req);
@@ -149,6 +173,11 @@ private:
   bool     _ready     = false;
   uint16_t _capacity  = P251_DEF_CAPACITY;
   int      _count     = -1;
+  std::vector<uint8_t> _index; // Used slots, bit n = slot n (P251_proto::indexUsed)
+  bool     _indexValid     = false;
+  bool     _indexSupported = true;  // The module answers ReadIndexTable
+  uint8_t  _indexPage      = 0;
+  int      _enrollSlot     = -1;    // Slot of the last enrolment (fingerprint,list)
   uint32_t _nextInit  = 0;
   uint32_t _nextScan  = 0;
   bool     _waitLift  = false; // Don't scan again until the finger is lifted

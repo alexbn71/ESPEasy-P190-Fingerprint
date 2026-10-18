@@ -32,6 +32,7 @@ constexpr uint8_t CMD_EMPTY         = 0x0D; // Delete all templates
 constexpr uint8_t CMD_READ_SYS_PARA = 0x0F; // -> 16 bytes, see SysParams
 constexpr uint8_t CMD_VFY_PWD       = 0x13; // <password (4)>
 constexpr uint8_t CMD_TEMPLATE_NUM  = 0x1D; // -> <count (2)>
+constexpr uint8_t CMD_READ_INDEX    = 0x1F; // <page> -> 32 bytes, bit n = template page * 256 + n is used
 constexpr uint8_t CMD_AURA_LED      = 0x35; // <mode> <speed> <color> <times>
 
 // Confirmation codes (first payload byte of an acknowledge)
@@ -58,7 +59,7 @@ constexpr uint8_t COLOR_CYAN   = 6;
 constexpr uint8_t COLOR_WHITE  = 7;
 
 constexpr size_t MAX_PARAMS   = 8;
-constexpr size_t MAX_PAYLOAD  = 32;               // Acknowledges are at most 17 bytes (ReadSysPara)
+constexpr size_t MAX_PAYLOAD  = 40;               // Acknowledges are at most 33 bytes (ReadIndexTable)
 constexpr size_t MAX_CMD_SIZE = 12 + MAX_PARAMS;  // header 2 + address 4 + PID 1 + length 2 + cmd 1 + checksum 2
 
 // Builds a command packet in buf (at least 12 + nparams bytes). Returns the packet length, 0 if nparams is too large.
@@ -177,6 +178,22 @@ private:
   uint16_t _checksum = 0;
   uint32_t _errors   = 0;
 };
+
+// Template index table: one bit per template, bit 0 of byte 0 = template 0 (as sent by ReadIndexTable)
+constexpr uint16_t INDEX_PAGE_TEMPLATES = 256;
+constexpr size_t   INDEX_PAGE_BYTES     = INDEX_PAGE_TEMPLATES / 8;
+
+inline bool indexUsed(const uint8_t *table, uint16_t id) {
+  return (table[id >> 3] >> (id & 7)) & 1;
+}
+
+// First free template below capacity, -1 if all are used
+inline int indexFirstFree(const uint8_t *table, uint16_t capacity) {
+  for (uint16_t id = 0; id < capacity; ++id) {
+    if (!indexUsed(table, id)) { return id; }
+  }
+  return -1;
+}
 
 // Case insensitive match of a name in a list, or a number in 1..count. Returns 1..count, 0 if not found.
 inline uint8_t lookup(const char *arg, const char *const *names, uint8_t count) {

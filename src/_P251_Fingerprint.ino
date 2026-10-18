@@ -9,9 +9,12 @@
    Grow fingerprint modules on a serial port: R503 (with RGB LED ring), R307, R502, ZFM-20, AS608, ...
    A finger on the sensor is searched in the module library: the values ID (-1 = not recognised), Score
    and Count (templates stored) are sent to the controllers and the rules (event <taskname>#ID).
+   The value Enroll is the progress of the last enrolment (P251_ENROLL_...), readable from /json.
 
    Commands:
-     fingerprint,enroll,<id>                            store a new finger at <id> (2 captures)
+     fingerprint,enroll[,<id>]                          store a new finger at <id>, or at the first free slot
+                                                        (2 captures); answers {"enroll":<id>} or {"error":"..."}
+     fingerprint,list                                   answers {"ready","capacity","count","enroll","slot","used":[ids]}
      fingerprint,delete,<id>                            delete the finger stored at <id>
      fingerprint,deleteall                              delete all fingers
      fingerprint,count                                  read the number of stored fingers (event #Count)
@@ -23,6 +26,7 @@
            #Deleted=<id> (-1 = all), #Count=<n>, #Error=<code>
 
    History:
+   2026-10-18 Enrolment at the first free slot, fingerprint,list, value Enroll
    2026-10-14 First version
  */
 
@@ -32,6 +36,7 @@
 # define PLUGIN_VALUENAME1_251 "ID"
 # define PLUGIN_VALUENAME2_251 "Score"
 # define PLUGIN_VALUENAME3_251 "Count"
+# define PLUGIN_VALUENAME4_251 "Enroll"
 
 # include "src/PluginStructs/P251_data_struct.h"
 
@@ -46,8 +51,8 @@ boolean Plugin_251(uint8_t function, struct EventStruct *event, String& string)
       auto& dev = Device[++deviceCount];
       dev.Number         = PLUGIN_ID_251;
       dev.Type           = DEVICE_TYPE_SERIAL_PLUS1;
-      dev.VType          = Sensor_VType::SENSOR_TYPE_TRIPLE;
-      dev.ValueCount     = 3;
+      dev.VType          = Sensor_VType::SENSOR_TYPE_QUAD;
+      dev.ValueCount     = 4;
       dev.SendDataOption = true;
       break;
     }
@@ -63,8 +68,9 @@ boolean Plugin_251(uint8_t function, struct EventStruct *event, String& string)
       strcpy_P(ExtraTaskSettings.TaskDeviceValueNames[P251_VALUE_ID],    PSTR(PLUGIN_VALUENAME1_251));
       strcpy_P(ExtraTaskSettings.TaskDeviceValueNames[P251_VALUE_SCORE], PSTR(PLUGIN_VALUENAME2_251));
       strcpy_P(ExtraTaskSettings.TaskDeviceValueNames[P251_VALUE_COUNT], PSTR(PLUGIN_VALUENAME3_251));
+      strcpy_P(ExtraTaskSettings.TaskDeviceValueNames[P251_VALUE_ENROLL], PSTR(PLUGIN_VALUENAME4_251));
 
-      for (uint8_t i = 0; i < 3; ++i) {
+      for (uint8_t i = 0; i < 4; ++i) {
         ExtraTaskSettings.TaskDeviceValueDecimals[i] = 0;
       }
       break;
