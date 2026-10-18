@@ -51,6 +51,15 @@ The [Build](.github/workflows/build.yml) workflow runs the unit tests and builds
 With the *Touch* GPIO the module is only queried when a finger is on the sensor. Without it the
 module is queried every *Scan interval* (default 250 ms).
 
+The colors are those of the Grow datasheet. Some R503 clones differ: a common one has a **brown** (or
+dark red) wire instead of the green one for the RX of the module. If unsure, power only red, white and
+black and measure the two data wires against GND: the TX of the module idles at about 3.3 V, the RX
+doesn't. Swapping TX and RX does no harm at 3.3 V, the module just doesn't answer.
+
+When the module answers, the log shows `Fingerprint: module ready, 0 of 200 templates used` a few
+seconds after the start. `Fingerprint: no answer from the module, check wiring and baud rate` means
+TX/RX swapped, no power or a wrong baud rate; the plugin retries every 5 seconds.
+
 ## Settings
 
 *Devices → Add → "Security - Fingerprint (Grow R503/R307)"*
@@ -66,6 +75,21 @@ module is queried every *Scan interval* (default 250 ms).
 | Show result on the LED ring | on | flashes twice in the *Recognised* (blue) or *Not recognised* (red) color |
 
 The device page shows whether the module answers and how many of its slots are used (R503: 200).
+
+### LED ring
+
+With *Show result on the LED ring* on:
+
+| When | Ring |
+|---|---|
+| finger recognised | 2 flashes in the *Recognised* color (default blue) |
+| finger not recognised | 2 flashes in the *Not recognised* color (default red) |
+| enrolment running | purple, breathing, from the start to the end: it doesn't change between "place" and "lift" (follow the `Enroll` value or the events for that) |
+| enrolment stored | 3 flashes in the *Recognised* color |
+| enrolment failed | 3 flashes in the *Not recognised* color |
+
+Outside these moments the plugin doesn't drive the ring (`fingerprint,led` can). On the full RGB modules purple looks
+pink / magenta.
 
 ## Values
 
@@ -121,6 +145,11 @@ From HTTP (`/control?cmd=...`) two commands answer with JSON:
 
 `enroll` and `slot` in the list are the state and the slot of the last enrolment. `used` is `null` if the
 module can't list its slots (ReadIndexTable): then `enroll` needs an `<id>`.
+
+ESPEasy appends its own `OK` to the output of every plugin command it ran, so the HTTP body is e.g.
+`{"enroll":3}OK`: parse from the first `{` to the last `}`. Without P251 in the firmware the answer is
+`Command unknown: ...`; a P251 older than these commands answers only `OK`. `delete`, `deleteall`, `cancel` and `led` answer only `OK`: their result
+comes later (event or `list`).
 
 **`/control` and `/json` don't ask for the ESPEasy admin password.** Anyone who can reach the ESP can enrol
 a finger, also over the slot of an authorised person. Limit the clients with *Config → Client IP filtering*
