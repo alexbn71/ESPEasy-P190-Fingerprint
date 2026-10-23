@@ -1,4 +1,4 @@
-# ESPEasy plugin P251 – Fingerprint reader (Grow R503 / R307)
+# ESPEasy plugin P190 – Fingerprint reader (Grow R503 / R307)
 
 <p align="center">
   <img src="docs/r503.png" alt="R503 fingerprint module with RGB LED ring and its 6-wire cable" width="420">
@@ -18,13 +18,17 @@ serial port: R503 (round, with RGB LED ring), R307, R502, ZFM-20, AS608 and comp
 
 Built against ESPEasy `mega-20260720` on ESP32.
 
+Plugin ID **190** is assigned by the ESPEasy maintainers ([letscontrolit/ESPEasy#5670](https://github.com/letscontrolit/ESPEasy/issues/5670)).
+Versions up to October 2026 used ID 251: after updating, ESPEasy no longer recognises a task created with the old
+ID, so add the task again with the same settings. The fingers stay stored in the module.
+
 ## Files
 
 | File | Content |
 |---|---|
-| `src/_P251_Fingerprint.ino` | the plugin (settings page) |
-| `src/src/PluginStructs/P251_data_struct.*` | state machine: scan, enrolment, commands |
-| `src/src/PluginStructs/P251_protocol.h` | packet encoding / decoding, no ESPEasy dependencies |
+| `src/_P190_Fingerprint.ino` | the plugin (settings page) |
+| `src/src/PluginStructs/P190_data_struct.*` | state machine: scan, enrolment, commands |
+| `src/src/PluginStructs/P190_protocol.h` | packet encoding / decoding, no ESPEasy dependencies |
 | `test/test_protocol.cpp` | host unit tests of the protocol |
 
 ## Adding it to an ESPEasy build
@@ -32,14 +36,14 @@ Built against ESPEasy `mega-20260720` on ESP32.
 1. Copy the `src/` folder of this repository over the `src/` folder of ESPEasy.
 2. Enable the plugin in `src/Custom.h` of ESPEasy:
    ```c
-   #define USES_P251   // Security - Fingerprint (Grow R503/R307)
+   #define USES_P190   // Security - Fingerprint (Grow R503/R307)
    ```
 3. Build a custom environment, e.g. `pio run -e custom_ESP32_4M316k`.
 
-ESPEasy already reserves the slot of plugin 251, so no other file needs to be changed.
+ESPEasy already has a slot for plugin 190, so no other file needs to be changed.
 
 The [Build](.github/workflows/build.yml) workflow runs the unit tests and builds a small test firmware
-(Switch, SysInfo, Dummy, P251) as the `espeasy-p251-test-firmware` artifact.
+(Switch, SysInfo, Dummy, P190) as the `espeasy-p190-test-firmware` artifact.
 
 ## Wiring (R503)
 
@@ -138,7 +142,7 @@ LED ring: `<mode>` = `breathing`, `flash`, `on`, `off`, `fadein`, `fadeout` (or 
 R503), `<speed>` 0..255 (default 100), `<times>` 0..255 (0 = forever, default).
 Example: `fingerprint,led,breathing,blue`.
 
-Commands reach every P251 task: use a single P251 task per ESP. Only one enrolment at a time: a second
+Commands reach every P190 task: use a single P190 task per ESP. Only one enrolment at a time: a second
 `enroll` is refused while one is queued or running.
 
 From HTTP (`/control?cmd=...`) two commands answer with JSON:
@@ -152,8 +156,8 @@ From HTTP (`/control?cmd=...`) two commands answer with JSON:
 module can't list its slots (ReadIndexTable): then `enroll` needs an `<id>`.
 
 ESPEasy appends its own `OK` to the output of every plugin command it ran, so the HTTP body is e.g.
-`{"enroll":3}OK`: parse from the first `{` to the last `}`. Without P251 in the firmware the answer is
-`Command unknown: ...`; a P251 older than these commands answers only `OK`. `delete`, `deleteall`, `cancel` and `led` answer only `OK`: their result
+`{"enroll":3}OK`: parse from the first `{` to the last `}`. Without P190 in the firmware the answer is
+`Command unknown: ...`; an older version of the plugin answers only `OK`. `delete`, `deleteall`, `cancel` and `led` answer only `OK`: their result
 comes later (event or `list`).
 
 **`/control` and `/json` don't ask for the ESPEasy admin password.** Anyone who can reach the ESP can enrol

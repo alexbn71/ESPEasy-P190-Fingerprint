@@ -33,7 +33,7 @@ jobs:
           ref: ${{ env.ESPEASY_REF }}
           path: ESPEasy
 
-      - name: Add P251 to ESPEasy
+      - name: Add P190 to ESPEasy
         run: |
           cp -rv plugin/src/. ESPEasy/src/
           cp -v plugin/.github/ci/Custom.h ESPEasy/src/Custom.h
@@ -63,11 +63,11 @@ jobs:
       - name: Collect firmware
         run: |
           mkdir firmware
-          cp ESPEasy/build_output/bin/*_${PIO_ENV}.factory.bin firmware/ESPEasy_P251_test_ESP32_4M.factory.bin
-          cp ESPEasy/build_output/bin/*_${PIO_ENV}.bin         firmware/ESPEasy_P251_test_ESP32_4M.ota.bin
+          cp ESPEasy/build_output/bin/*_${PIO_ENV}.factory.bin firmware/ESPEasy_P190_test_ESP32_4M.factory.bin
+          cp ESPEasy/build_output/bin/*_${PIO_ENV}.bin         firmware/ESPEasy_P190_test_ESP32_4M.ota.bin
           ls -l firmware
 
       - uses: actions/upload-artifact@v4
         with:
-          name: espeasy-p251-test-firmware
+          name: espeasy-p190-test-firmware
           path: firmware/*.bin

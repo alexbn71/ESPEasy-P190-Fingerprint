@@ -1,12 +1,12 @@
-// Host unit tests of the Grow fingerprint protocol (P251_protocol.h).
+// Host unit tests of the Grow fingerprint protocol (P190_protocol.h).
 // g++ -std=c++17 -Wall -Wextra -Werror -Isrc/src/PluginStructs -o test_protocol test/test_protocol.cpp && ./test_protocol
 
-#include "P251_protocol.h"
+#include "P190_protocol.h"
 
 #include <cstdio>
 #include <vector>
 
-using namespace P251_proto;
+using namespace P190_proto;
 
 static int failures = 0;
 
