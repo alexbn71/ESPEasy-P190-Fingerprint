@@ -1,5 +1,9 @@
 # ESPEasy plugin P251 – Fingerprint reader (Grow R503 / R307)
 
+<p align="center">
+  <img src="docs/r503.png" alt="R503 fingerprint module with RGB LED ring and its 6-wire cable" width="420">
+</p>
+
 [ESPEasy](https://github.com/letscontrolit/ESPEasy) plugin for the **Grow fingerprint modules** on a
 serial port: R503 (round, with RGB LED ring), R307, R502, ZFM-20, AS608 and compatibles.
 
@@ -39,25 +43,23 @@ The [Build](.github/workflows/build.yml) workflow runs the unit tests and builds
 
 ## Wiring (R503)
 
-<img src="docs/r503.jpg" alt="R503 fingerprint module with RGB LED ring and its 6-wire cable" width="220" align="right">
-
 | Wire | | ESP32 |
 |---|---|---|
-| Red | VCC **3.3 V** (not 5 V) | 3V3 |
-| Black | GND | GND |
-| Yellow | TX of the module | RX GPIO of the task (e.g. GPIO16) |
-| Green | RX of the module | TX GPIO of the task (e.g. GPIO17) |
-| Blue | WAKEUP: low while a finger touches the sensor | optional *Touch* GPIO (e.g. GPIO4) |
-| White | 3.3VT: power of the touch circuit | 3V3 |
+| 🔴 Red | VCC **3.3 V** (not 5 V) | 3V3 |
+| ⚫ Black | GND | GND |
+| 🟡 Yellow | TX of the module | RX GPIO of the task (e.g. GPIO16) |
+| 🟢 Green | RX of the module | TX GPIO of the task (e.g. GPIO17) |
+| 🔵 Blue | WAKEUP: low while a finger touches the sensor | optional *Touch* GPIO (e.g. GPIO4) |
+| ⚪ White | 3.3VT: power of the touch circuit | 3V3 |
 
 With the *Touch* GPIO the module is only queried when a finger is on the sensor. Without it the
 module is queried every *Scan interval* (default 250 ms).
 
 The colors are those of the Grow datasheet. Some R503 clones differ: the one in the picture (the module
 used to test this plugin, [from AliExpress](https://www.aliexpress.com/item/1005010295347958.html)) has a
-**brown** (or dark red) wire instead of the green one for the RX of the module. If unsure, power only red, white and
-black and measure the two data wires against GND: the TX of the module idles at about 3.3 V, the RX
-doesn't. Swapping TX and RX does no harm at 3.3 V, the module just doesn't answer.
+🟤 **brown** (or dark red) wire instead of the green one for the RX of the module. If unsure, power only
+red, white and black and measure the two data wires against GND: the TX of the module idles at about
+3.3 V, the RX doesn't. Swapping TX and RX does no harm at 3.3 V, the module just doesn't answer.
 
 When the module answers, the log shows `Fingerprint: module ready, 0 of 200 templates used` a few
 seconds after the start. `Fingerprint: no answer from the module, check wiring and baud rate` means
