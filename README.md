@@ -39,6 +39,8 @@ The [Build](.github/workflows/build.yml) workflow runs the unit tests and builds
 
 ## Wiring (R503)
 
+<img src="docs/r503.jpg" alt="R503 fingerprint module with RGB LED ring and its 6-wire cable" width="220" align="right">
+
 | Wire | | ESP32 |
 |---|---|---|
 | Red | VCC **3.3 V** (not 5 V) | 3V3 |
@@ -51,8 +53,9 @@ The [Build](.github/workflows/build.yml) workflow runs the unit tests and builds
 With the *Touch* GPIO the module is only queried when a finger is on the sensor. Without it the
 module is queried every *Scan interval* (default 250 ms).
 
-The colors are those of the Grow datasheet. Some R503 clones differ: a common one has a **brown** (or
-dark red) wire instead of the green one for the RX of the module. If unsure, power only red, white and
+The colors are those of the Grow datasheet. Some R503 clones differ: the one in the picture (the module
+used to test this plugin, [from AliExpress](https://www.aliexpress.com/item/1005010295347958.html)) has a
+**brown** (or dark red) wire instead of the green one for the RX of the module. If unsure, power only red, white and
 black and measure the two data wires against GND: the TX of the module idles at about 3.3 V, the RX
 doesn't. Swapping TX and RX does no harm at 3.3 V, the module just doesn't answer.
 
