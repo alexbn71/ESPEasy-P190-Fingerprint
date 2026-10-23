@@ -28,7 +28,7 @@ ID, so add the task again with the same settings. The fingers stay stored in the
 |---|---|
 | `src/_P190_Fingerprint.ino` | the plugin (settings page) |
 | `src/src/PluginStructs/P190_data_struct.*` | state machine: scan, enrolment, commands |
-| `src/src/PluginStructs/P190_protocol.h` | packet encoding / decoding, no ESPEasy dependencies |
+| `src/src/PluginStructs/P190_protocol.*` | packet encoding / decoding, no ESPEasy dependencies |
 | `test/test_protocol.cpp` | host unit tests of the protocol |
 
 ## Adding it to an ESPEasy build

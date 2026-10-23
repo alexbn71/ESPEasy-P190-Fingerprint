@@ -22,7 +22,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Protocol tests
         run: |
-          g++ -std=c++17 -Wall -Wextra -Werror -Isrc/src/PluginStructs -o test_protocol test/test_protocol.cpp
+          g++ -std=c++17 -Wall -Wextra -Werror -DP190_HOST_TEST -Isrc/src/PluginStructs -o test_protocol \
+            test/test_protocol.cpp src/src/PluginStructs/P190_protocol.cpp
           ./test_protocol
 
   firmware:
