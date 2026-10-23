@@ -75,7 +75,7 @@ TX/RX swapped, no power or a wrong baud rate; the plugin retries every 5 seconds
 
 | Setting | Default | |
 |---|---|---|
-| Serial port, GPIO RX / TX | – | hardware serial recommended. ESP32: RX/TX are filled in automatically when a HW port is selected (Serial0 3/1, Serial1 26/27, Serial2 16/17), and can be changed |
+| Serial port, GPIO RX / TX | – | hardware serial recommended; select the GPIOs the module is connected to (e.g. HW Serial2 with RX GPIO16, TX GPIO17) |
 | Touch (WAKEUP) | – | optional input GPIO |
 | Baud rate | 57600 | factory setting of the module |
 | Password / Address | 0x00000000 / 0xFFFFFFFF | factory settings |
