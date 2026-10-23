@@ -814,13 +814,23 @@ bool P190_data_struct::plugin_write(struct EventStruct *event, const String& str
   return true;
 }
 
-void P190_data_struct::showValues(struct EventStruct *event) const {
-  uint8_t varNr = VARS_PER_TASK;
+bool P190_data_struct::showValues(struct EventStruct *event) const {
+  uint8_t varNr        = VARS_PER_TASK;
+  const String module  = _ready ? String(F("OK")) : String(F("No answer"));
+  const String library = strformat(F("%d / %d"), _count, _capacity);
 
-  pluginWebformShowValue(event->TaskIndex, varNr++, F("Module"),
-                         _ready ? String(F("OK")) : String(F("No answer")));
-  pluginWebformShowValue(event->TaskIndex, varNr++, F("Templates"),
-                         strformat(F("%d / %d"), _count, _capacity), true);
+# if P190_TASK_VALUES_WRITER
+  TaskValuesWriterHelper data(event);
+
+  data.setWriteRegularTaskValuesFirst();
+  data.writeCustom(varNr++, F("Module"), module);
+  data.writeCustom(varNr++, F("Templates"), library, true);
+  return true;
+# else // if P190_TASK_VALUES_WRITER
+  pluginWebformShowValue(event->TaskIndex, varNr++, F("Module"), module);
+  pluginWebformShowValue(event->TaskIndex, varNr++, F("Templates"), library, true);
+  return false; // ESPEasy writes the task values
+# endif // if P190_TASK_VALUES_WRITER
 }
 
 #endif // ifdef USES_P190

@@ -11,6 +11,14 @@
 
 # include "P190_protocol.h"
 
+// ESPEasy from September 2026 writes the device page values with TaskValuesWriterHelper (pluginWebformShowValue
+// is no longer available to plugins); older versions, like mega-20260720, only have pluginWebformShowValue
+# if __has_include("../Helpers/TaskValuesWriterHelper.h")
+#  define P190_TASK_VALUES_WRITER 1
+# else
+#  define P190_TASK_VALUES_WRITER 0
+# endif
+
 # define P190_BAUD_MULT        PCONFIG(0)       // Baud rate / 9600: 1, 2, 4, 6 or 12
 # define P190_LED_FEEDBACK     PCONFIG(1)       // 1 = show match / no match / enrolment on the LED ring
 # define P190_MATCH_COLOR      PCONFIG(2)       // LED color of a match (P190_proto::COLOR_...)
@@ -108,7 +116,8 @@ public:
   void loop(struct EventStruct *event);
   bool plugin_write(struct EventStruct *event,
                     const String      & string);
-  void showValues(struct EventStruct *event) const;
+  // Device page: the state of the module; true when the task values were written too
+  bool showValues(struct EventStruct *event) const;
 
 private:
 

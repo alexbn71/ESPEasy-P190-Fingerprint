@@ -174,7 +174,7 @@ boolean Plugin_190(uint8_t function, struct EventStruct *event, String& string)
       P190_data_struct *P190_data = static_cast<P190_data_struct *>(getPluginTaskData(event->TaskIndex));
 
       if (nullptr != P190_data) {
-        P190_data->showValues(event);
+        success = P190_data->showValues(event);
       }
       break;
     }
