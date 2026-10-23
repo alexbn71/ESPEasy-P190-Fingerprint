@@ -4,9 +4,15 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      espeasy_ref:
+        description: 'ESPEasy branch, tag or commit to build against (e.g. mega for the latest code)'
+        required: false
+        default: ''
 
 env:
-  ESPEASY_REF: mega-20260720        # ESPEasy release the plugin is built against
+  # ESPEasy release the plugin is built against; a manual run can choose another ref
+  ESPEASY_REF: ${{ inputs.espeasy_ref || 'mega-20260720' }}
   PIO_ENV: custom_ESP32_4M316k      # ESP32, 4 MB flash
 
 jobs:
