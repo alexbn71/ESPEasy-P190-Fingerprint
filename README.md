@@ -7,19 +7,19 @@
 [ESPEasy](https://github.com/letscontrolit/ESPEasy) plugin for the **Grow fingerprint modules** on a
 serial port: R503 (round, with RGB LED ring), R307, R502, ZFM-20, AS608 and compatibles.
 
-- Recognises a finger and sends its ID and score to the controllers and the rules
-- Enrol, delete and count fingers with commands (from rules, HTTP or MQTT); enrolment can pick the first
+- Recognizes a finger and sends its ID and score to the controllers and the rules
+- Enroll, delete and count fingers with commands (from rules, HTTP or MQTT); enrollment can pick the first
   free slot by itself
-- Enrolment progress as a task value, and JSON answers to HTTP commands: an enrolment page needs nothing
+- Enrollment progress as a task value, and JSON answers to HTTP commands: an enrollment page needs nothing
   but `/json` and `/control`
-- R503 LED ring: automatic feedback (recognised / not recognised / enrolling) and a `led` command
+- R503 LED ring: automatic feedback (recognized / not recognized / enrolling) and a `led` command
 - Touch detection on the WAKEUP pin, or polling when it is not wired
 - Non blocking: the protocol runs as a state machine, ESPEasy keeps running while the module works
 
 Built against ESPEasy `mega-20260720` on ESP32.
 
 Plugin ID **190** is assigned by the ESPEasy maintainers ([letscontrolit/ESPEasy#5670](https://github.com/letscontrolit/ESPEasy/issues/5670)).
-Versions up to October 2026 used ID 251: after updating, ESPEasy no longer recognises a task created with the old
+Versions up to October 2026 used ID 251: after updating, ESPEasy no longer recognizes a task created with the old
 ID, so add the task again with the same settings. The fingers stay stored in the module.
 
 ## Files
@@ -27,7 +27,7 @@ ID, so add the task again with the same settings. The fingers stay stored in the
 | File | Content |
 |---|---|
 | `src/_P190_Fingerprint.ino` | the plugin (settings page) |
-| `src/src/PluginStructs/P190_data_struct.*` | state machine: scan, enrolment, commands |
+| `src/src/PluginStructs/P190_data_struct.*` | state machine: scan, enrollment, commands |
 | `src/src/PluginStructs/P190_protocol.*` | packet encoding / decoding, no ESPEasy dependencies |
 | `test/test_protocol.cpp` | host unit tests of the protocol |
 
@@ -80,8 +80,8 @@ TX/RX swapped, no power or a wrong baud rate; the plugin retries every 5 seconds
 | Baud rate | 57600 | factory setting of the module |
 | Password / Address | 0x00000000 / 0xFFFFFFFF | factory settings |
 | Scan interval | 250 ms | only without the touch GPIO |
-| Minimum score | 0 | lower scores are reported as not recognised (ID -1, with their Score); the ID found is logged (Info) to help tune it |
-| Show result on the LED ring | on | flashes twice in the *Recognised* (blue) or *Not recognised* (red) color |
+| Minimum score | 0 | lower scores are reported as not recognized (ID -1, with their Score); the ID found is logged (Info) to help tune it |
+| Show result on the LED ring | on | flashes twice in the *Recognized* (blue) or *Not recognized* (red) color |
 
 The device page shows whether the module answers and how many of its slots are used (R503: 200).
 
@@ -91,11 +91,11 @@ With *Show result on the LED ring* on:
 
 | When | Ring |
 |---|---|
-| finger recognised | 2 flashes in the *Recognised* color (default blue) |
-| finger not recognised | 2 flashes in the *Not recognised* color (default red) |
-| enrolment running | purple, breathing, from the start to the end: it doesn't change between "place" and "lift" (follow the `Enroll` value or the events for that) |
-| enrolment stored | 3 flashes in the *Recognised* color |
-| enrolment failed | 3 flashes in the *Not recognised* color |
+| finger recognized | 2 flashes in the *Recognized* color (default blue) |
+| finger not recognized | 2 flashes in the *Not recognized* color (default red) |
+| enrollment running | purple, breathing, from the start to the end: it doesn't change between "place" and "lift" (follow the `Enroll` value or the events for that) |
+| enrollment stored | 3 flashes in the *Recognized* color |
+| enrollment failed | 3 flashes in the *Not recognized* color |
 
 Outside these moments the plugin doesn't drive the ring (`fingerprint,led` can). On the full RGB modules purple looks
 pink / magenta.
@@ -104,10 +104,10 @@ pink / magenta.
 
 | Value | |
 |---|---|
-| `ID` | slot of the recognised finger (0..199 on the R503), **-1** = not recognised |
+| `ID` | slot of the recognized finger (0..199 on the R503), **-1** = not recognized |
 | `Score` | match score from the module (higher = better) |
 | `Count` | number of fingers stored in the module |
-| `Enroll` | progress of the last enrolment, see below |
+| `Enroll` | progress of the last enrollment, see below |
 
 They are sent once per touch, when a finger is scanned: the rules get `<taskname>#ID`,
 `<taskname>#Score` and `<taskname>#Count`. The module must see the finger lifted before it scans again.
@@ -117,7 +117,7 @@ value number 4) by pages or systems that don't get the rules events.
 
 | `Enroll` | |
 |---|---|
-| 0 | no enrolment yet, or accepted and waiting to start |
+| 0 | no enrollment yet, or accepted and waiting to start |
 | 1 | place the finger (capture 1) |
 | 2 | lift the finger |
 | 3 | place the finger again (capture 2) |
@@ -135,14 +135,14 @@ value number 4) by pages or systems that don't get the rules events.
 | `fingerprint,deleteall` | delete all fingers |
 | `fingerprint,count` | read the number of stored fingers (event `#Count`) |
 | `fingerprint,led,<mode>,<color>[,<speed>[,<times>]]` | LED ring, see below |
-| `fingerprint,cancel` | stop an enrolment |
+| `fingerprint,cancel` | stop an enrollment |
 
 LED ring: `<mode>` = `breathing`, `flash`, `on`, `off`, `fadein`, `fadeout` (or 1..6), `<color>` =
 `red`, `blue`, `purple`, `green`, `yellow`, `cyan`, `white` (or 1..7; green to white need the full RGB
 R503), `<speed>` 0..255 (default 100), `<times>` 0..255 (0 = forever, default).
 Example: `fingerprint,led,breathing,blue`.
 
-Commands reach every P190 task: use a single P190 task per ESP. Only one enrolment at a time: a second
+Commands reach every P190 task: use a single P190 task per ESP. Only one enrollment at a time: a second
 `enroll` is refused while one is queued or running.
 
 From HTTP (`/control?cmd=...`) two commands answer with JSON:
@@ -152,32 +152,33 @@ From HTTP (`/control?cmd=...`) two commands answer with JSON:
 | `fingerprint,enroll[,<id>]` | `{"enroll":3}` (slot used) or `{"error":"no free slot"}` |
 | `fingerprint,list` | `{"ready":true,"capacity":200,"count":2,"enroll":5,"slot":3,"used":[0,3]}` |
 
-`enroll` and `slot` in the list are the state and the slot of the last enrolment. `used` is `null` if the
+`enroll` and `slot` in the list are the state and the slot of the last enrollment. `used` is `null` if the
 module can't list its slots (ReadIndexTable): then `enroll` needs an `<id>`.
 
 ESPEasy appends its own `OK` to the output of every plugin command it ran, so the HTTP body is e.g.
-`{"enroll":3}OK`: parse from the first `{` to the last `}`. Without P190 in the firmware the answer is
+`{"enroll":3}OK`: parse from the first `{` to the last `}`. A command that fails (e.g. `{"error":"no free slot"}`) is
+followed by `Command unknown: ...` instead. Without P190 in the firmware the answer is
 `Command unknown: ...`; an older version of the plugin answers only `OK`. `delete`, `deleteall`, `cancel` and `led` answer only `OK`: their result
 comes later (event or `list`).
 
-**`/control` and `/json` don't ask for the ESPEasy admin password.** Anyone who can reach the ESP can enrol
-a finger, also over the slot of an authorised person. Limit the clients with *Config → Client IP filtering*
+**`/control` and `/json` don't ask for the ESPEasy admin password.** Anyone who can reach the ESP can enroll
+a finger, also over the slot of an authorized person. Limit the clients with *Config → Client IP filtering*
 (e.g. *Allow IP range*) or keep the ESP in a network only trusted devices can reach.
 
 ## Events
 
 | Event | |
 |---|---|
-| `<taskname>#EnrollScan=<n>` | enrolment: place the finger (capture `<n>` = 1 or 2) |
-| `<taskname>#EnrollRemove=<n>` | enrolment: lift the finger |
-| `<taskname>#Enrolled=<id>` | enrolment done |
-| `<taskname>#EnrollFailed=<code>` | enrolment failed, see the codes below |
+| `<taskname>#EnrollScan=<n>` | enrollment: place the finger (capture `<n>` = 1 or 2) |
+| `<taskname>#EnrollRemove=<n>` | enrollment: lift the finger |
+| `<taskname>#Enrolled=<id>` | enrollment done |
+| `<taskname>#EnrollFailed=<code>` | enrollment failed, see the codes below |
 | `<taskname>#Deleted=<id>` | slot deleted, -1 = all |
 | `<taskname>#Count=<n>` | answer to `fingerprint,count` |
 | `<taskname>#Error=<code>` | `delete`, `deleteall`, `count` or `led` failed |
 
 Error codes: `10` the two captures are not the same finger, `11` slot out of range, `24` flash
-error, `252` no free slot, `253` cancelled, `254` no finger placed / lifted within 20 s, `255` no answer from the module.
+error, `252` no free slot, `253` canceled, `254` no finger placed / lifted within 20 s, `255` no answer from the module.
 Other values are confirmation codes of the module (see its datasheet).
 
 ## Rules example
@@ -200,7 +201,7 @@ on Finger#Enrolled do
 endon
 ```
 
-Enrol from the browser: `http://<esp-ip>/control?cmd=fingerprint,enroll` (first free slot) or
+Enroll from the browser: `http://<esp-ip>/control?cmd=fingerprint,enroll` (first free slot) or
 `http://<esp-ip>/control?cmd=fingerprint,enroll,0`.
 
 ## License
