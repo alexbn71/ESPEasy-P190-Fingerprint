@@ -80,7 +80,7 @@ TX/RX swapped, no power or a wrong baud rate; the plugin retries every 5 seconds
 | Baud rate | 57600 | factory setting of the module |
 | Password / Address | 0x00000000 / 0xFFFFFFFF | factory settings |
 | Scan interval | 250 ms | only without the touch GPIO |
-| Minimum score | 0 | lower scores are reported as not recognised |
+| Minimum score | 0 | lower scores are reported as not recognised (ID -1, with their Score); the ID found is logged (Info) to help tune it |
 | Show result on the LED ring | on | flashes twice in the *Recognised* (blue) or *Not recognised* (red) color |
 
 The device page shows whether the module answers and how many of its slots are used (R503: 200).
