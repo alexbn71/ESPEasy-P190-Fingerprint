@@ -78,12 +78,15 @@ TX/RX swapped, no power or a wrong baud rate; the plugin retries every 5 seconds
 | Serial port, GPIO RX / TX | – | hardware serial recommended; select the GPIOs the module is connected to (e.g. HW Serial2 with RX GPIO16, TX GPIO17) |
 | Touch (WAKEUP) | – | optional input GPIO |
 | Baud rate | 57600 | factory setting of the module |
-| Password / Address | 0x00000000 / 0xFFFFFFFF | factory settings |
+| Password / Address | 0x00000000 / 0xFFFFFFFF | factory settings; only if changed in the module (e.g. with the manufacturer's tools), the plugin doesn't change them |
 | Scan interval | 250 ms | only without the touch GPIO |
 | Minimum score | 0 | lower scores are reported as not recognized (ID -1, with their Score); the ID found is logged (Info) to help tune it |
 | Show result on the LED ring | on | flashes twice in the *Recognized* (blue) or *Not recognized* (red) color |
 
 The device page shows whether the module answers and how many of its slots are used (R503: 200).
+
+**The module keeps its password and address in its own flash and has no factory reset:** a module whose
+password or address was changed and then lost doesn't answer anymore. Write down any value set in the module.
 
 ### LED ring
 
